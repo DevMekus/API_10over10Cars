@@ -5,6 +5,7 @@ declare(strict_types=1);
 $directories = [
     __DIR__ . "/src/controllers",
     __DIR__ . "/src/gateways",
+    __DIR__ . "/src/configs",
 ];
 
 spl_autoload_register(function ($class) use ($directories) {
@@ -41,41 +42,13 @@ $database =  new Database("localhost", "10over10", "root", "");
 
 switch ($parts[2]) {
     case "account":
-        $accountGate = new AccountGateway($database);
-        $account = new AccountController($accountGate);
-        $account->processRequest($_SERVER['REQUEST_METHOD'], $id);
+        // $accountGate = new AccountGateway($database);
+        // $account = new AccountController($accountGate);
+        // $account->processRequest($_SERVER['REQUEST_METHOD'], $id);
         break;
     case "admin":
-        $adminGate = new AdminGateway($database);
-        $admin = new AdminController($adminGate);
-        $admin->processRequest($_SERVER['REQUEST_METHOD'], $id);
-        break;
-    case "report":
-        /**        
-         * Get all Report 
-         * Get Report
-         * Update Report
-         * Delete Report
-         * Create Report
-         */
-        $reportGate = new ReportGateway($database);
-        $report = new ReportController($reportGate);
-        $report->processRequest($_SERVER['REQUEST_METHOD'], $id);
-        break;
-    case "theft":
-        $theftReportGate = new TheftGateway($database);
-        $theftController = new TheftController($theftReportGate);
-        $theftController->processRequest($_SERVER['REQUEST_METHOD'], $id);
-        break;
-    case "transaction":
-        break;
-    case "product":
         break;
 
-    case "theft":
-        break;
-    case "blog":
-        break;
     case "test":
         echo json_encode(['message' => 'API working and found']);
         break;
