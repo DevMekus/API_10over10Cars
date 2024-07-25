@@ -47,6 +47,14 @@ switch ($parts[2]) {
         $account->processRequest($_SERVER['REQUEST_METHOD'], $id);
         break;
     case "admin":
+        $adminGate = new AdminGateway($database);
+        $admin = new AdminController($adminGate);
+        $admin->processRequest($_SERVER['REQUEST_METHOD'], $id);
+        break;
+    case "vehicle":
+        $vehicleGate = new CarGateway($database);
+        $vehicle = new CarController($vehicleGate);
+        $vehicle->processRequest($_SERVER['REQUEST_METHOD'], $id);
         break;
 
     case "test":

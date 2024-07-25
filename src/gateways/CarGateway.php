@@ -21,7 +21,31 @@ class CarGateway
 
     public function create(array $data)
     {
+        /**
+         * Creates a New car with the basic car Information.
+         * Returns the Vin for further addition to the Database
+         */
     }
+
+    private function newCarInfo(array $data)
+    {
+    }
+
+    private function newOwnershipInfo(array $data)
+    {
+    }
+
+    private function newOdometer(array $data)
+    {
+    }
+
+    private function newSalesHistory(array $data)
+    {
+    }
+    private function newSystemCheck(array $data)
+    {
+    }
+
 
     public function update(array $prev, array $data)
     {

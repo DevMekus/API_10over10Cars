@@ -126,6 +126,14 @@ class AccountGateway
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($data['user_password'], $user['user_password'])) {
+            /**
+             * Save Activity
+             */
+            $this->utility->logActivity([
+                'userid' => $user['userid'],
+                'types' => 'Login',
+                'messages' => 'Login to account successful',
+            ]);
             http_response_code(200);
             echo json_encode(
                 [
@@ -158,6 +166,14 @@ class AccountGateway
 
 
         if ($admin && password_verify($data['user_password'], $admin['admin_password'])) {
+            /**
+             * Save Activity
+             */
+            $this->utility->logActivity([
+                'userid' => $admin['admin_id'],
+                'types' => 'Login',
+                'messages' => 'Login to account successful',
+            ]);
 
             http_response_code(200);
             echo json_encode(
@@ -200,6 +216,15 @@ class AccountGateway
         }
 
         if ($this->createAccount($data, $userid) && $this->userProfile($data, $userid)) {
+            /**
+             * Save Activity
+             */
+            $this->utility->logActivity([
+                'userid' => $userid,
+                'types' => 'Register',
+                'messages' => 'Registration successful',
+            ]);
+
             http_response_code(201);
             echo json_encode([
                 "message" => "User registered successfully",
@@ -358,6 +383,15 @@ class AccountGateway
 
                 $stmt->bindValue(':token', $data['token']);
                 $stmt->execute();
+                /**
+                 * Save Activity
+                 */
+                $this->utility->logActivity([
+                    'userid' => $user['userid'],
+                    'types' => 'Reset',
+                    'messages' => 'Account reset successful',
+                ]);
+
                 http_response_code(200);
 
                 echo json_encode(
@@ -417,6 +451,15 @@ class AccountGateway
         $row = $stmt->execute();
         $userid = $data['userid'];
 
+        /**
+         * Save Activity
+         */
+        $this->utility->logActivity([
+            'userid' => $userid,
+            'types' => 'Update',
+            'messages' => 'Account update successful',
+        ]);
+
         echo json_encode([
             "message" => "Account $userid updated",
             "status" => 'success',
@@ -441,6 +484,14 @@ class AccountGateway
 
             $stmt->execute();
             $row = $stmt->rowCount();
+            /**
+             * Save Activity
+             */
+            $this->utility->logActivity([
+                'userid' => $id,
+                'types' => 'Delete',
+                'messages' => 'Account delete successful',
+            ]);
             echo json_encode([
                 "message" => "Account $id deleted",
                 "status" => 'success',
