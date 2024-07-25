@@ -76,40 +76,7 @@ class AccountController
 
             case "POST":
                 $data = (array) json_decode(file_get_contents("php://input"), true);
-
-                if ($data['action'] === "login") {
-                    /**
-                     * Login attempt 
-                     * */
-
-                    // $this->gateway->loginUser($data);
-                } else if ($data['action'] === 'register') {
-                    /**
-                     * Register user
-                     */
-
-                    $this->gateway->create($data);
-                } else if ($data['action'] === 'reset') {
-                    /**
-                     * Reset 
-                     * Password 
-                     * */
-
-                    if ($_GET['action'] === 'request_rest') {
-                        // $this->requestReset($data);
-                    } else if ($_GET['action'] === 'verify_token') {
-                        $token = $_GET['token'] ?? '';
-
-                        // $this->verifyToken($token);
-                    } else if ($_GET['action'] === 'reset_password') {
-                        $data = json_decode(file_get_contents('php://input'), true);
-
-                        $token = $data['token'] ?? '';
-
-                        // $this->resetPassword($token, $data);
-                    }
-                }
-
+                $this->gateway->create($data);
                 break;
             default:
                 http_response_code(405); //Method not allowed

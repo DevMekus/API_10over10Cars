@@ -5,7 +5,7 @@ declare(strict_types=1);
 $directories = [
     __DIR__ . "/src/controllers",
     __DIR__ . "/src/gateways",
-    __DIR__ . "/src/configs",
+    __DIR__ . "/src/config",
 ];
 
 spl_autoload_register(function ($class) use ($directories) {
@@ -42,9 +42,9 @@ $database =  new Database("localhost", "10over10", "root", "");
 
 switch ($parts[2]) {
     case "account":
-        // $accountGate = new AccountGateway($database);
-        // $account = new AccountController($accountGate);
-        // $account->processRequest($_SERVER['REQUEST_METHOD'], $id);
+        $accountGate = new AccountGateway($database);
+        $account = new AccountController($accountGate);
+        $account->processRequest($_SERVER['REQUEST_METHOD'], $id);
         break;
     case "admin":
         break;
