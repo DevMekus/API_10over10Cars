@@ -56,6 +56,11 @@ switch ($parts[2]) {
         $vehicle = new CarController($vehicleGate);
         $vehicle->processRequest($_SERVER['REQUEST_METHOD'], $id);
         break;
+    case "report":
+        $reportGate = new ReportGateway($database);
+        $report = new ReportController($reportGate);
+        $report->processRequest($_SERVER['REQUEST_METHOD'], $id);
+        break;
 
     case "test":
         echo json_encode(['message' => 'API working and found']);
