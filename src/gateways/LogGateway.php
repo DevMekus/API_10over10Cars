@@ -71,7 +71,7 @@ class LogGateway
              * Save Activity
              */
             $this->utility->logActivity([
-                'userid' => 'Admin ',
+                'userid' => 'Admin',
                 'types' => 'Delete',
                 'messages' => "Log $id deleted",
             ]);
