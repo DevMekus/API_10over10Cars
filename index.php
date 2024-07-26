@@ -61,6 +61,11 @@ switch ($parts[2]) {
         $report = new ReportController($reportGate);
         $report->processRequest($_SERVER['REQUEST_METHOD'], $id);
         break;
+    case "transaction":
+        $transactionGate = new TransactionGateway($database);
+        $transaction = new TransactionController($transactionGate);
+        $transaction->processRequest($_SERVER['REQUEST_METHOD'], $id);
+        break;
 
     case "test":
         echo json_encode(['message' => 'API working and found']);

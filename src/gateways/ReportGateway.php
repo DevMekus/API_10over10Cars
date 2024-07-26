@@ -40,8 +40,7 @@ class ReportGateway
          */
         $stmt = $this->conn->prepare(
             "SELECT * 
-                    FROM theft_report_tbl
-                        WHERE vin = :vin"
+                    FROM theft_report_tbl"
         );
         $stmt->execute();
 
