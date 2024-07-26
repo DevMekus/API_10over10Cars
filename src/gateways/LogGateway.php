@@ -40,7 +40,8 @@ class LogGateway
          */
         $stmt = $this->conn->prepare(
             "SELECT * 
-                    FROM log_tbl"
+                    FROM log_tbl
+                    ORDER BY id DESC"
         );
         $stmt->execute();
 

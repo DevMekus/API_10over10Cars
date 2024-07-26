@@ -40,7 +40,8 @@ class VerificationGateway
          */
         $stmt = $this->conn->prepare(
             "SELECT * 
-                    FROM verification_request"
+                    FROM verification_request
+                    ORDER BY id DESC"
         );
         $stmt->execute();
 

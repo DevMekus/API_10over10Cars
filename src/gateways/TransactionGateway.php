@@ -40,7 +40,8 @@ class TransactionGateway
          */
         $stmt = $this->conn->prepare(
             "SELECT * 
-                    FROM transaction_tbl"
+                    FROM transaction_tbl
+                    ORDER BY id DESC"
         );
         $stmt->execute();
 

@@ -40,7 +40,8 @@ class ReportGateway
          */
         $stmt = $this->conn->prepare(
             "SELECT * 
-                    FROM theft_report_tbl"
+                    FROM theft_report_tbl
+                        ORDER BY id DESC"
         );
         $stmt->execute();
 
