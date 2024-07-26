@@ -12,7 +12,27 @@ class SupportGateway
 
     public function get(string $id)
     {
-        return [];
+        /**
+         * Fetch the Support associated to this $id(Vin)
+         */
+        $stmt = $this->conn->prepare(
+            "SELECT * 
+                    FROM support
+                    LEFT JOIN supportmessages
+                    ON support.ticketid = supportmessages.ticket
+                        WHERE support.userid = :id"
+        );
+
+        $stmt->bindValue(':vin', $id);
+        $stmt->execute();
+
+        $data = [];
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $data[] = $row;
+        }
+
+        return $data;
     }
 
     public function getAll()

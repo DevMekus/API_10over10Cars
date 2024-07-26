@@ -21,44 +21,27 @@ class VerificationController
 
     private function processResourceRequest(string $method, string $id): void
     {
-        $account = $this->gateway->get($id);
+        $request = $this->gateway->get($id);
 
-        if (!$account) {
+        if (!$request) {
             http_response_code(404);
-            echo json_encode(["message" => "Account not found"]);
+            echo json_encode(["message" => "Request not found"]);
             return;
         }
 
         switch ($method) {
             case "GET":
-                echo json_encode($account);
+                echo json_encode($request);
                 break;
 
             case "PATCH":
                 $data = (array) json_decode(file_get_contents("php://input"), true);
 
-                /**Validate errors here */
-                $row = $this->gateway->update($account, $data);
-
-                echo json_encode([
-                    "message" => "Account $id updated",
-                    "status" => 'success',
-                    "rows" => $row,
-
-                ]);
-
+                $this->gateway->update($request, $data);
                 break;
 
             case "DELETE":
-                $row = $this->gateway->delete($id);
-
-                if ($row) {
-                    echo json_encode([
-                        "message" => "Account $id deleted",
-                        "status" => 'success',
-                        "rows" => $row
-                    ]);
-                }
+                $this->gateway->delete($id);
 
             default:
                 http_response_code(405); //Method not allowed
