@@ -25,6 +25,12 @@ class CarGateway
          * Creates a New car with the basic car Information.
          * Returns the Vin for further addition to the Database
          */
+        switch ($data['create']) {
+            case "VEHICLE":
+                break;
+            case "FEATURE":
+                break;
+        }
     }
 
     private function newCarInfo(array $data)

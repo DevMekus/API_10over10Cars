@@ -14,7 +14,8 @@ class Utility
          * Saves activity log
          */
 
-        $stmt = $this->conn->prepare("INSERT INTO log_tbl(log_id, userid, types, messages, save_date, time_stamp)VALUES(:id, :userid, :types, :messages, :saveDate, :stamp)");
+        $stmt = $this->conn->prepare("INSERT INTO log_tbl(log_id, userid, log_type, messages, save_date, time_stamp)
+        VALUES(:id, :userid, :types, :messages, :saveDate, :stamp)");
 
         $stmt->bindValue(":id", substr(str_shuffle(MD5(microtime())), 0, 9));
         $stmt->bindValue(":userid", $data['userid']);

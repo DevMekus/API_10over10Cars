@@ -32,6 +32,7 @@ header("Access-Control-Allow-Origin: *");
 
 $parts = explode('/', $_SERVER['REQUEST_URI']);
 $id = $parts[3] ?? null;
+$featureId = $parts[4] ?? null;
 
 $database =  new Database("localhost", "10over10", "root", "");
 
@@ -66,9 +67,14 @@ switch ($parts[2]) {
         $transaction = new TransactionController($transactionGate);
         $transaction->processRequest($_SERVER['REQUEST_METHOD'], $id);
         break;
+    case "features":
+        $featureGate = new FeatureGateway($database);
+        $features = new FeatureController($featureGate);
+        $features->processRequest($_SERVER['REQUEST_METHOD'], $id, $featureId);
+        break;
 
     case "test":
-        echo json_encode(['message' => 'API working and found']);
+        echo json_encode(['message' => 'API working and found: FeatureID:' . $featureId]);
         break;
 
     default:
