@@ -19,10 +19,6 @@ class FeatureGateway
         $this->conn = $database->getConnection();
         $this->utility =  new Utility($database);
     }
-    /**
-     * Note:
-     *  
-     */
 
     public function get(string $id)
     {
@@ -139,7 +135,7 @@ class FeatureGateway
                     "DELETE FROM $table WHERE id = :$featureId"
                 );
 
-                $stmt->bindValue(":$featureId", $featureId);
+                $stmt->bindValue(":id", $featureId);
 
                 if ($row = $stmt->execute()) {
                     /**

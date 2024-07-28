@@ -55,7 +55,7 @@ switch ($parts[2]) {
     case "vehicle":
         $vehicleGate = new CarGateway($database);
         $vehicle = new CarController($vehicleGate);
-        $vehicle->processRequest($_SERVER['REQUEST_METHOD'], $id);
+        $vehicle->processRequest($_SERVER['REQUEST_METHOD'], $id, $featureId);
         break;
     case "report":
         $reportGate = new ReportGateway($database);
