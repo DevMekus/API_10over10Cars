@@ -34,6 +34,9 @@ $parts = explode('/', $_SERVER['REQUEST_URI']);
 $id = $parts[3] ?? null;
 $featureId = $parts[4] ?? null;
 
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+
 $database =  new Database("localhost", "10over10", "root", "");
 
 
@@ -72,10 +75,36 @@ switch ($parts[2]) {
         $features = new FeatureController($featureGate);
         $features->processRequest($_SERVER['REQUEST_METHOD'], $id, $featureId);
         break;
+    case "support":
+        $supportGate = new SupportGateway($database);
+        $support = new SupportController($supportGate);
+        $support->processRequest($_SERVER['REQUEST_METHOD'], $id, $featureId);
+        break;
+
+    case "log":
+        $logGate = new LogGateway($database);
+        $log = new LogController($logGate);
+        $log->processRequest(
+            $_SERVER['REQUEST_METHOD'],
+            $id,
+            $page,
+            $limit
+        );
+        break;
+    case "verification":
+        $verifyGate = new VerificationGateway($database);
+        $verify = new VerificationController($verifyGate);
+        $verify->processRequest($_SERVER['REQUEST_METHOD'], $id, $featureId);
+        break;
 
     case "test":
         echo json_encode(['message' => 'API working and found: FeatureID:' . $featureId]);
         break;
+    case "welcome":
+        $utility = new Utility($database);
+        echo json_encode($utility->accountData($id));
+        break;
+
 
     default:
         http_response_code(404);

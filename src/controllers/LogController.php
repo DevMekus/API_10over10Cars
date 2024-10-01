@@ -9,17 +9,17 @@ class LogController
         $this->gateway = $gateway;
     }
 
-    public function processRequest(string $method, ?string $id): void
+    public function processRequest(string $method, ?string $id, $page, $limit): void
     {
 
         if ($id) {
-            $this->processResourceRequest($method, $id);
+            $this->processResourceRequest($method, $id, $page, $limit);
         } else {
-            $this->processCollectionRequest($method);
+            $this->processCollectionRequest($method, $page, $limit);
         }
     }
 
-    private function processResourceRequest(string $method, string $id): void
+    private function processResourceRequest(string $method, string $id, $page, $limit): void
     {
         $log = $this->gateway->get($id);
 
@@ -42,7 +42,7 @@ class LogController
         }
     }
 
-    private function processCollectionRequest(string $method): void
+    private function processCollectionRequest(string $method, $page, $limit): void
     {
 
         switch ($method) {

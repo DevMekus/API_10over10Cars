@@ -58,8 +58,7 @@ class ReportController
                 break;
 
             case "POST":
-                $data = (array) json_decode(file_get_contents("php://input"), true);
-
+                $data = (array) json_decode(file_get_contents("php://input"), true);           
                 $this->gateway->create($data);
 
                 break;

@@ -25,7 +25,7 @@ class VerificationController
 
         if (!$request) {
             http_response_code(404);
-            echo json_encode(["message" => "Request not found"]);
+            echo json_encode(["message" => "Verification Request not found"]);
             return;
         }
 

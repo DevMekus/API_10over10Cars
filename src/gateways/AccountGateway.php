@@ -3,11 +3,13 @@ class AccountGateway
 {
     private PDO $conn;
     private $utility;
+    private $log;
 
     public function __construct(Database $database)
     {
         $this->conn = $database->getConnection();
         $this->utility =  new Utility($database);
+        $this->log = new LogGateway($database);
     }
 
     public function get(string $id)
@@ -20,7 +22,6 @@ class AccountGateway
             INNER JOIN accounts_tbl account
                 ON user.userid = account.userid
                    WHERE account.userid = :userid";
-
 
         $stmt = $this->conn->prepare($sql);
         $stmt->bindValue(':userid', $id);
@@ -80,13 +81,7 @@ class AccountGateway
                 $this->creset($data);
                 break;
             default:
-                http_response_code(400);
-                echo json_encode(
-                    [
-                        'message' => 'Request not understood',
-                        'status' => 'error'
-                    ]
-                );
+                $this->utility->badRequest();
         }
     }
 
@@ -99,7 +94,6 @@ class AccountGateway
         if (!$this->checkUser($data)) {
             if (!$this->checkAdmin($data)) {
                 http_response_code(401);
-
                 echo json_encode(
                     [
                         'message' => 'Invalid email address or password.',
@@ -129,10 +123,10 @@ class AccountGateway
             /**
              * Save Activity
              */
-            $this->utility->logActivity([
+            $this->log->create([
                 'userid' => $user['userid'],
                 'types' => 'Login',
-                'messages' => 'Login to account successful',
+                'messages' => 'Login to account',
             ]);
             http_response_code(200);
             echo json_encode(
@@ -140,7 +134,9 @@ class AccountGateway
                     'message' => 'Login successful.',
                     'userid' => $user['userid'],
                     'status' => 'success',
-                    'role' => 'user'
+                    'role' => 'user',
+                    'username' => $user['fullname'],
+                    'last_seen' => $this->log->lastSeen($user['userid'])
                 ]
             );
             exit;
@@ -169,19 +165,22 @@ class AccountGateway
             /**
              * Save Activity
              */
-            $this->utility->logActivity([
+            $this->log->create([
                 'userid' => $admin['admin_id'],
                 'types' => 'Login',
                 'messages' => 'Login to account successful',
+
             ]);
 
             http_response_code(200);
             echo json_encode(
                 [
-                    'message' => 'Login successful.',
+                    'message' => 'Login successful',
                     'admin' => $admin['admin_id'],
                     'status' => 'success',
-                    'role' => 'admin'
+                    'role' => 'admin',
+                    'user-data' => $admin['fullname'],
+                    'last-seen' => $this->log->lastSeen($admin['admin_id'])
                 ]
             );
             exit;
@@ -215,28 +214,38 @@ class AccountGateway
             exit;
         }
 
-        if ($this->createAccount($data, $userid) && $this->userProfile($data, $userid)) {
+        if (
+            $this->createAccount($data, $userid)
+            && $this->userProfile($data, $userid)
+        ) {
             /**
-             * Save Activity
+             * Send a mail to the user
              */
-            $this->utility->logActivity([
+            $mail = new Email();
+            $mail->NewAccount([
+                'fullname' => $data['fullname'],
+                'email' => $data['email_address']
+            ]);
+            $this->log->create([
                 'userid' => $userid,
-                'types' => 'Register',
-                'messages' => 'Registration successful',
+                'types' => 'New Account',
+                'messages' => 'New Account created',
             ]);
 
             http_response_code(201);
             echo json_encode([
-                "message" => "User registered successfully",
+                "message" => "Welcome to our Platform.",
                 "userid" => $userid,
                 'status' => 'success',
-                'account' => 'user'
+                'role' => 'user',
+                'username' => $data['fullname'],
+                'last_seen' => 'Today'
             ]);
             exit;
         }
         http_response_code(500);
         echo json_encode([
-            'message' => 'Account registration failed.',
+            'message' => 'An error has occurred',
             'status' => 'error'
         ]);
     }
@@ -263,6 +272,8 @@ class AccountGateway
         $stmt->bindValue(':phone', "");
         $stmt->bindValue(':emailAddress', $data['email_address']);
         $stmt->bindValue(':passwords', $hashedPassword);
+
+        return $stmt->execute();
     }
 
     private function createAccount(array $data, string $userid)
@@ -276,7 +287,8 @@ class AccountGateway
         $reset_token = "";
         $status = "pending";
 
-        $sql = "INSERT INTO accounts_tbl(userid, account_status, create_date, time_stamp, reset_token, reset_token_expiration)VALUES(:userid, :accountStatus, :createDate, :tStamp, :reset_token, :reset_token_expiration)";
+        $sql = "INSERT INTO accounts_tbl(userid, account_status, create_date, time_stamp, reset_token, reset_token_expiration)
+        VALUES(:userid, :accountStatus, :createDate, :tStamp, :reset_token, :reset_token_expiration)";
 
         $stmt =  $this->conn->prepare($sql);
 
@@ -294,7 +306,7 @@ class AccountGateway
     {
         $stmt = $this->conn->prepare("SELECT * FROM user_profile_tbl WHERE email_address = :email");
 
-        $stmt->bindParam(':email', $data['email']);
+        $stmt->bindParam(':email', $data['email_address']);
         $stmt->execute();
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -302,7 +314,7 @@ class AccountGateway
             $resetToken = bin2hex(random_bytes(16));
             $resetTokenExpiration = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-            $stmt = $this->conn->prepare("UPDATE account_tbl SET reset_token = :reset_token, reset_token_expiration = :reset_token_expiration WHERE userid = :userid ");
+            $stmt = $this->conn->prepare("UPDATE accounts_tbl SET reset_token = :reset_token, reset_token_expiration = :reset_token_expiration WHERE userid = :userid ");
 
             $stmt->bindValue(':reset_token', $resetToken);
             $stmt->bindValue(':reset_token_expiration', $resetTokenExpiration);
@@ -311,10 +323,12 @@ class AccountGateway
             $stmt->execute();
 
             /**Send an Email to the User */
-
-            $resetLink = "http://localhost:3000/auth/reset?token=$resetToken";
-
-            mail($data['email'], 'Password Reset', "Click here to reset your password: $resetLink");
+            $mail = new Email();
+            $mail->ResetAccount([
+                'fullname' => $user['fullname'],
+                'email' => $data['email_address'],
+                'resetToken' => $resetToken
+            ]);
 
             http_response_code(200);
             echo json_encode(
@@ -339,23 +353,21 @@ class AccountGateway
         /**
          * Verify the reset account token
          */
-        $stmt = $this->conn->prepare("SELECT * FROM account_tbl WHERE reset_token  = :reset_token AND reset_token_expiration > NOW()");
+        $stmt = $this->conn->prepare("SELECT * FROM accounts_tbl WHERE reset_token = :reset_token AND reset_token_expiration < NOW()");
 
-        $stmt->bindValue(':reset_token', $data['token']);
+        $stmt->bindValue(':reset_token', trim($data['token']));
         $stmt->execute();
 
         if ($stmt->fetch(PDO::FETCH_ASSOC)) {
-            http_response_code(200);
-            echo json_encode([
-                'message' => 'Change a new password.',
-                'status' => 'success'
-            ]);
+            $this->creset($data);
+            exit;
         } else {
             http_response_code(400);
             echo json_encode(
                 [
                     'message' => 'Invalid or expired token.',
-                    'status' => 'error'
+                    'status' => 'error',
+                    'token' => $data['token']
                 ]
             );
         }
@@ -365,23 +377,31 @@ class AccountGateway
         /**
          * Confirm Reset and reset the account password
          */
-        $stmt = $this->conn->prepare("SELECT * FROM account_tbl WHERE reset_token = :reset_token AND reset_token_expiration > NOW()");
-        $stmt->bindValue(':reset_token', $data['token']);
+
+
+        $stmt = $this->conn->prepare("SELECT * FROM accounts_tbl WHERE reset_token = :reset_token");
+        $stmt->bindValue(':reset_token', trim($data['token']));
         $stmt->execute();
 
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
         if ($user) {
-            $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+
+            $hashedPassword = password_hash($data['user_password'], PASSWORD_DEFAULT);
 
             $stmt = $this->conn->prepare("UPDATE user_profile_tbl SET user_password = :passwords WHERE userid = :userid");
             $stmt->bindValue(':userid', $user['userid']);
             $stmt->bindValue(':passwords', $hashedPassword);
 
             if ($stmt->execute()) {
-                /**Update account table */
-                $stmt = $this->conn->prepare("UPDATE account_tbl SET reset_token = NULL, reset_expiration_token = NULL WHERE reset_token = :token");
 
-                $stmt->bindValue(':token', $data['token']);
+                /**Update account table */
+                $stmt = $this->conn->prepare("UPDATE accounts_tbl SET reset_token = :reset_token, reset_token_expiration = :reset_token_expiration WHERE userid = :userid ");
+
+                $stmt->bindValue(':reset_token', "");
+                $stmt->bindValue(':reset_token_expiration', "");
+                $stmt->bindValue(':userid', $user['userid']);
+
                 $stmt->execute();
                 /**
                  * Save Activity
@@ -396,20 +416,20 @@ class AccountGateway
 
                 echo json_encode(
                     [
-                        'message' => 'Password has been reset successfully.',
+                        'message' => 'Reset Successful. Login',
                         'status' => 'success'
                     ]
                 );
+                exit;
             }
-        } else {
-            http_response_code(400);
-            echo json_encode(
-                [
-                    'message' => 'Invalid or expired token.',
-                    'status' => 'error'
-                ]
-            );
         }
+        http_response_code(400);
+        echo json_encode(
+            [
+                'message' => 'Invalid or expired token.',
+                'status' => 'error'
+            ]
+        );
     }
 
     public function update(array $prev, array $data)
@@ -454,7 +474,7 @@ class AccountGateway
         /**
          * Save Activity
          */
-        $this->utility->logActivity([
+        $this->log->create([
             'userid' => $userid,
             'types' => 'Update',
             'messages' => 'Account update successful',
@@ -487,7 +507,7 @@ class AccountGateway
             /**
              * Save Activity
              */
-            $this->utility->logActivity([
+            $this->log->create([
                 'userid' => $id,
                 'types' => 'Delete',
                 'messages' => 'Account delete successful',

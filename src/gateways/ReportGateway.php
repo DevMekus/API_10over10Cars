@@ -3,11 +3,13 @@ class ReportGateway
 {
     private PDO $conn;
     private $utility;
+    private $log;
 
     public function __construct(Database $database)
     {
         $this->conn = $database->getConnection();
         $this->utility =  new Utility($database);
+        $this->log = new LogGateway($database);
     }
 
     public function get(string $id)
@@ -18,10 +20,13 @@ class ReportGateway
         $stmt = $this->conn->prepare(
             "SELECT * 
                     FROM theft_report_tbl
-                        WHERE vin = :vin"
+                        WHERE vin = :vin
+                          OR userid = :userid
+                            ORDER BY id DESC"
         );
 
         $stmt->bindValue(':vin', $id);
+        $stmt->bindValue(':userid', $id);
         $stmt->execute();
 
         $data = [];
@@ -87,7 +92,8 @@ class ReportGateway
          */
 
         if (isset($data['file_upload'])) {
-            $uploadDIR = "../UPLOADS/Images/";
+
+            $uploadDIR = "../UPLOADS/";
 
             foreach ($data['file_upload'] as $file) {
                 $fileName = $file['file_name'];
@@ -101,12 +107,12 @@ class ReportGateway
                     $uploadDIR
                 ]);
 
-                $this->utility->saveCarImage($filename, $data['vin']);
+                $this->utility->saveCarImage($data['vin'], $filename);
             }
         }
 
-        $sql = "INSERT INTO theft_report_tbl(userid, theft_id, vin, vtype, vbrand, vmodel, theft_location, theft_day, theft_month, theft_year, report_date, time_stamp)
-        VALUES(:userid, :theft_id, :vin, :vtype, :vbrand, :vmodel, :theft_location, :theft_day, :theft_month, :theft_year, :report_date, :time_stamp)";
+        $sql = "INSERT INTO theft_report_tbl(userid, theft_id, vin, vtype, vbrand, vmodel, theft_location, city, country, theft_day, theft_month, theft_year, report_date, time_stamp, report_status)
+        VALUES(:userid, :theft_id, :vin, :vtype, :vbrand, :vmodel, :theft_location, :city, :country, :theft_day, :theft_month, :theft_year, :report_date, :time_stamp, :report_status)";
 
         $stmt = $this->conn->prepare($sql);
 
@@ -117,20 +123,23 @@ class ReportGateway
         $stmt->bindValue(":vbrand", $data['vbrand']);
         $stmt->bindValue(":vmodel", $data['vmodel']);
         $stmt->bindValue(":theft_location", $data['theft_location']);
+        $stmt->bindValue(":city", $data['city']);
+        $stmt->bindValue(":country", $data['country']);
         $stmt->bindValue(":theft_day", $data['theft_day']);
         $stmt->bindValue(":theft_month", $data['theft_month']);
         $stmt->bindValue(":theft_year", $data['theft_year']);
         $stmt->bindValue(":report_date", date("d-m-Y", time()));
         $stmt->bindValue(":time_stamp", time());
+        $stmt->bindValue(":report_status", "searching");
 
         if ($stmt->execute()) {
             /**
              * Save Activity
              */
-            $this->utility->logActivity([
+            $this->log->create([
                 'userid' => $data['userid'],
                 'types' => 'Report',
-                'messages' => 'Reported theft',
+                'messages' => 'A new theft report saved.',
             ]);
 
             http_response_code(201);

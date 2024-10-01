@@ -2,10 +2,12 @@
 class Utility
 {
     private $conn;
+    private $database;
 
     public function __construct(Database $database)
     {
         $this->conn = $database->getConnection();
+        $this->database = $database;
     }
 
     public function logActivity(array $data)
@@ -52,11 +54,7 @@ class Utility
             'image/jpeg',
             'image/png',
             'image/jpg',
-            'application/pdf',
-            'application/msword', //Word documents (.doc)
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // Word documents (.docx)
-            'application/vnd.ms-excel', // Excel files (.xls)
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // Excel files (.xlsx)                    
+            'application/pdf'
         ];
 
         if (!in_array($data['fileType'], $allowedTypes)) {
@@ -127,9 +125,9 @@ class Utility
         }
     }
 
-    public function saveCarImage(string $fileName, string $vin)
+    public function saveCarImage(string $vin, string $fileName)
     {
-        $sql = "INSERT INTO car_gallery(vin, file_name)VALUES(:vin, :vname)";
+        $sql = "INSERT INTO gallery(vin, file_name)VALUES(:vin, :vname)";
         $stmt = $this->conn->prepare($sql);
 
         $stmt->bindValue(":vin", $vin);
@@ -154,5 +152,81 @@ class Utility
         $stmt = $this->conn->prepare("DELETE FROM car_gallery WHERE vin = :id");
         $stmt->bindValue(':id', $vin);
         return $stmt->execute();
+    }
+
+    public function badRequest()
+    {
+        http_response_code(400);
+        echo json_encode(
+            [
+                'message' => 'Request not understood',
+                'status' => 'error',
+                'title' => 'Bad Request'
+            ]
+        );
+    }
+
+    public function accountData(string $id)
+    {
+        /**
+         * Fetch data to store in the storage
+         * $id is userid
+         */
+        $account = new AccountGateway($this->database);
+        $logs = new LogGateway($this->database);
+        $user = $account->get($id);
+
+        if ($user) {
+            return [
+                'fullname' => $user[0]['fullname'],
+                'email' => $user[0]['email_address'],
+                'last-seen' => $logs->lastSeen($id)
+            ];
+        }
+    }
+
+    public function getUserIpAddr()
+    {
+        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            // Check if IP is from shared internet
+            $ip = $_SERVER['HTTP_CLIENT_IP'];
+        } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            // Check if IP is passed from a proxy
+            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        } else {
+            // Use REMOTE_ADDR as fallback
+            $ip = $_SERVER['REMOTE_ADDR'];
+        }
+
+        // If there's a list of IPs (e.g., from a proxy), get the first one
+        $ip = explode(',', $ip)[0];
+
+        return trim($ip);
+    }
+
+    public function getDeviceType()
+    {
+        $userAgent = $_SERVER['HTTP_USER_AGENT'];
+        $isMobile = preg_match('/(android|iphone|ipad|ipod|mobile|silk|kindle|blackberry|opera mini|opera mobi|palm os|windows phone|iemobile)/i', $userAgent);
+
+        return $isMobile ? 'Mobile' : 'PC';
+    }
+
+    public function getUserLocation($ip)
+    {
+        $apiUrl = "http://ipinfo.io/{$ip}/json";
+        $locationData = file_get_contents($apiUrl);
+        return json_decode($locationData, true);
+    }
+
+    public function testLocation()
+    {
+        $ip = $this->getUserIpAddr();
+
+        echo json_encode([
+            'ip' => $ip,
+            'device' => $this->getDeviceType(),
+            'location' => $this->getUserLocation($ip)
+        ]);
     }
 }

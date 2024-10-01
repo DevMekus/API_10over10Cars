@@ -18,10 +18,12 @@ class VerificationGateway
         $stmt = $this->conn->prepare(
             "SELECT * 
                     FROM verification_request
-                        WHERE vin = :vin"
+                        WHERE vin = :vin
+                        OR userid = :userid"
         );
 
         $stmt->bindValue(':vin', $id);
+        $stmt->bindValue(':userid', $id);
         $stmt->execute();
 
         $data = [];
@@ -82,7 +84,7 @@ class VerificationGateway
             exit;
         }
 
-        $sql = "INSERT INTO verification_request(request_id, userid, payment_id, vin, request_status, request_date, time_stamp)
+        $sql = "INSERT INTO verification_request(request_id, userid, payment_id, vin, rstatus, request_date, time_stamp)
         VALUES(:request_id, :userid, :payment_id, :vin, :request_status, :request_date, :time_stamp)";
 
         $stmt = $this->conn->prepare($sql);

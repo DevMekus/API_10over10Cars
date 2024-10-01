@@ -18,10 +18,10 @@ class TransactionGateway
         $stmt = $this->conn->prepare(
             "SELECT * 
                     FROM transaction_tbl
-                        WHERE ref = :ref"
+                        WHERE invoiceid = :id"
         );
 
-        $stmt->bindValue(':ref', $id);
+        $stmt->bindValue(':id', $id);
         $stmt->execute();
 
         $data = [];
@@ -66,11 +66,10 @@ class TransactionGateway
          */
         $stmt = $this->conn->prepare("SELECT COUNT(*) 
         FROM transaction_tbl 
-            WHERE ref = :id 
-                OR invoiceid  = :invoice");
+            WHERE invoiceid  = :invoice");
 
-        $stmt->bindValue(":id", $ref);
-        $stmt->bindValue(":invoiceid", $data['invoiceid']);
+
+        $stmt->bindValue(":invoice", $data['invoiceId']);
         $stmt->execute();
 
         if ($stmt->fetchColumn() > 0) {
@@ -82,17 +81,18 @@ class TransactionGateway
             exit;
         }
 
-        $sql = "INSERT INTO transaction_tbl(ref, invoiceid, userid, cart_items, tstatus, sdate, tstamp)
-        VALUES(:ref, :invoiceid, :userid, :cart_items, :tstatus, :sdate, :tstamp)";
+        $sql = "INSERT INTO transaction_tbl(invoiceid, paymentid, userid, cart_items, amount, tstatus, sdate, tstamp)
+        VALUES(:invoiceid, :paymentid, :userid, :cart_items, :amount, :tstatus, :sdate, :tstamp)";
 
         $stmt = $this->conn->prepare($sql);
-        $stmt->bindValue(":ref", $ref);
-        $stmt->bindValue(":invoiceid", $data['invoiceid']);
+        $stmt->bindValue(":invoiceid", $data['invoiceId']);
+        $stmt->bindValue(":paymentid", $data['paymentId']);
         $stmt->bindValue(":userid", $data['userid']);
-        $stmt->bindValue(":cart_items", $data['cart_items']);
-        $stmt->bindValue(":tstatus", $data['tstatus']);
-        $stmt->bindValue(":", date("d-m-Y", time()));
-        $stmt->bindValue(":", time());
+        $stmt->bindValue(":cart_items", json_encode($data['cart']));
+        $stmt->bindValue(":amount", $data['grandTotal']);
+        $stmt->bindValue(":tstatus", $data['status']);
+        $stmt->bindValue(":sdate", date("d-m-Y", time()));
+        $stmt->bindValue(":tstamp", time());
 
         if ($stmt->execute()) {
             /**
@@ -108,6 +108,7 @@ class TransactionGateway
             echo json_encode([
                 "message" => "Transaction successful!",
                 'status' => 'success',
+                "paymentId" => $data['paymentId']
             ]);
             exit;
         }
@@ -186,7 +187,7 @@ class TransactionGateway
             ]);
             exit;
         }
-        
+
         http_response_code(500);
         echo json_encode([
             'message' => 'Transaction delete failed.',
